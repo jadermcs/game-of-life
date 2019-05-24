@@ -1,2 +1,2 @@
-# game-of-life
-Game of Life using GLFW
+# Game of Life
+Conway's game of life using GLFW.
