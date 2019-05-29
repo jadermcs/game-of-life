@@ -188,22 +188,21 @@ int main(int argc, char* argv[]) {
     glBindVertexArray(fullscreen_triangle_vao);
 
     // Prepare game
-    Sprite alien_sprite;
-    alien_sprite.width = 11;
-    alien_sprite.height = 11;
-    alien_sprite.data = new uint8_t[121]
+    Sprite bacteria_sprite;
+    bacteria_sprite.width = 10;
+    bacteria_sprite.height = 10;
+    bacteria_sprite.data = new uint8_t[100]
     {
-        0,0,0,0,1,1,1,0,0,0,0,
-        0,0,1,1,1,1,1,1,1,0,0,
-        0,1,1,1,1,1,1,1,1,1,0,
-        0,1,1,1,1,1,1,1,1,1,0,
-        1,1,1,1,1,1,1,1,1,1,1,
-        1,1,1,1,1,1,1,1,1,1,1,
-        1,1,1,1,1,1,1,1,1,1,1,
-        0,1,1,1,1,1,1,1,1,1,0,
-        0,1,1,1,1,1,1,1,1,1,0,
-        0,0,1,1,1,1,1,1,1,0,0,
-        0,0,0,0,1,1,1,0,0,0,0
+        0,0,0,0,0,0,0,0,0,0,
+        0,1,1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,1,1,
+        0,1,1,1,1,1,1,1,1,1,
     };
 
     uint32_t clear_color = rgb_to_uint32(255, 255, 255);
@@ -211,9 +210,9 @@ int main(int argc, char* argv[]) {
     while (!glfwWindowShouldClose(window)) {
         buffer_clear(&buffer, clear_color);
 
-        buffer_draw_sprite(&buffer, alien_sprite, 112, 128,
+        buffer_draw_sprite(&buffer, bacteria_sprite, 112, 128,
                            rgb_to_uint32(0, 0, 0));
-        buffer_draw_sprite(&buffer, alien_sprite, 12, 18,
+        buffer_draw_sprite(&buffer, bacteria_sprite, 122, 128,
                            rgb_to_uint32(0, 0, 0));
 
         glTexSubImage2D(
@@ -223,9 +222,7 @@ int main(int argc, char* argv[]) {
             buffer.data
         );
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
         glfwSwapBuffers(window);
-
         glfwPollEvents();
     }
 
@@ -234,7 +231,7 @@ int main(int argc, char* argv[]) {
 
     glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 
-    delete[] alien_sprite.data;
+    delete[] bacteria_sprite.data;
     delete[] buffer.data;
 
     return 0;
