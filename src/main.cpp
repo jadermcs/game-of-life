@@ -1,29 +1,7 @@
-#include <cstdio>
-#include <cstdint>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "utils.h"
 
-#define GL_ERROR_CASE(glerror)\
-    case glerror: snprintf(error, sizeof(error), "%s", #glerror)
-
-inline void gl_debug(const char *file, int line) {
-    GLenum err;
-    while((err = glGetError()) != GL_NO_ERROR){
-        char error[128];
-
-        switch(err) {
-            GL_ERROR_CASE(GL_INVALID_ENUM); break;
-            GL_ERROR_CASE(GL_INVALID_VALUE); break;
-            GL_ERROR_CASE(GL_INVALID_OPERATION); break;
-            GL_ERROR_CASE(GL_INVALID_FRAMEBUFFER_OPERATION); break;
-            GL_ERROR_CASE(GL_OUT_OF_MEMORY); break;
-            default: snprintf(error, sizeof(error), "%s", "UNKNOWN_ERR");break;
-        }
-
-        fprintf(stderr, "%s - %s: %d\n", error, file, line);
-    }
-}
-#undef GL_ERROR_CASE
 
 void validate_shader(GLuint shader, const char *file = 0){
     static const unsigned int BUFFER_SIZE = 512;
@@ -60,27 +38,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action,
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-struct Buffer {
-    size_t width, height;
-    uint32_t* data;
-};
-
-struct Sprite {
-    size_t width, height;
-    uint8_t* data;
-};
-
 void buffer_clear(Buffer* buffer, uint32_t color) {
     for(size_t i = 0; i < buffer->width * buffer->height; ++i)
         buffer->data[i] = color;
-}
-
-static bool sprite_overlap_check(const Sprite& sp_a, size_t x_a, size_t y_a,
-                                 const Sprite& sp_b, size_t x_b, size_t y_b) {
-    if(x_a < x_b + sp_b.width && x_a + sp_a.width > x_b &&
-       y_a < y_b + sp_b.height && y_a + sp_a.height > y_b)
-        return true;
-    return false;
 }
 
 void buffer_draw_sprite(Buffer* buffer, const Sprite& sprite, size_t x,
@@ -92,10 +52,6 @@ void buffer_draw_sprite(Buffer* buffer, const Sprite& sprite, size_t x,
                (x + xi) < buffer->width)
                 buffer->data[(sprite.height - 1 + y - yi) *
                     buffer->width + (x + xi)] = color;
-}
-
-static uint32_t rgb_to_uint32(uint8_t r, uint8_t g, uint8_t b) {
-    return (r << 24) | (g << 16) | (b << 8) | 255;
 }
 
 int main(int argc, char* argv[]) {
