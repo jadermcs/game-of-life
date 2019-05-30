@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 project(GameOfLife)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(GLEW REQUIRED)

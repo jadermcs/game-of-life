@@ -1,35 +1,13 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <cstdlib>
 #include "utils.h"
+#include "shaders.h"
+#include "grid.h"
 
-
-void validate_shader(GLuint shader, const char *file = 0){
-    static const unsigned int BUFFER_SIZE = 512;
-    char buffer[BUFFER_SIZE];
-    GLsizei length = 0;
-    glGetShaderInfoLog(shader, BUFFER_SIZE, &length, buffer);
-
-    if(length > 0) printf("Shader %d(%s) compile error: %s\n",
-                            shader, (file? file: ""), buffer);
-}
-
-bool validate_program(GLuint program) {
-    static const GLsizei BUFFER_SIZE = 512;
-    GLchar buffer[BUFFER_SIZE];
-    GLsizei length = 0;
-
-    glGetProgramInfoLog(program, BUFFER_SIZE, &length, buffer);
-
-    if(length > 0) {
-        printf("Program %d link error: %s\n", program, buffer);
-        return false;
-    }
-
-    return true;
-}
 
 static void error_callback(int error, const char* description) {
-    fprintf(stderr, "Error: %s\n", description);
+    fprintf(stderr, "Error: %s code %d\n", description, error);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action,
@@ -43,20 +21,28 @@ void buffer_clear(Buffer* buffer, uint32_t color) {
         buffer->data[i] = color;
 }
 
-void buffer_draw_sprite(Buffer* buffer, const Sprite& sprite, size_t x,
-                        size_t y, uint32_t color) {
-    for(size_t xi = 0; xi < sprite.width; ++xi)
-        for(size_t yi = 0; yi < sprite.height; ++yi)
-            if(sprite.data[yi * sprite.width + xi] &&
-               (sprite.height - 1 + y - yi) < buffer->height &&
-               (x + xi) < buffer->width)
-                buffer->data[(sprite.height - 1 + y - yi) *
-                    buffer->width + (x + xi)] = color;
-}
-
 int main(int argc, char* argv[]) {
+    int n_jobs;
     const size_t buffer_width = 640;
     const size_t buffer_height = 280;
+
+    if (argc > 1) {
+        n_jobs = atoi(argv[1]);
+        printf("Number of threads: %d\n", n_jobs);
+    }
+    else {
+        printf("Please enter number of threads.\n");
+        return -1;
+    }
+    Grid grid;
+    grid.width = buffer_width/10;
+    grid.height = buffer_height/10;
+    grid.cells = new uint8_t[grid.width*grid.height];
+
+    Sprite bacteria_sprite;
+    bacteria_sprite.width = 10;
+    bacteria_sprite.height = 10;
+    bacteria_sprite.data = bac_sprite;
 
     glfwSetErrorCallback(error_callback);
 
@@ -77,6 +63,7 @@ int main(int argc, char* argv[]) {
 
     glfwSetKeyCallback(window, key_callback);
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(5);
 
     GLenum err = glewInit();
     if(err != GLEW_OK) {
@@ -93,8 +80,6 @@ int main(int argc, char* argv[]) {
     printf("Using OpenGL: %d.%d\n", glVersion[0], glVersion[1]);
     printf("Renderer used: %s\n", glGetString(GL_RENDERER));
     printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-    glClearColor(1.0, 0.0, 0.0, 1.0);
 
     // Create graphics buffer
     Buffer buffer;
@@ -121,23 +106,6 @@ int main(int argc, char* argv[]) {
 
 
     // Create shader for displaying buffer
-    static const char* fragment_shader =
-        "#version 330\n"
-        "uniform sampler2D buffer;\n"
-        "noperspective in vec2 TexCoord;\n"
-        "out vec3 outColor;\n"
-        "void main(void){\n"
-        "    outColor = texture(buffer, TexCoord).rgb;\n"
-        "}\n";
-
-    static const char* vertex_shader =
-        "#version 330\n"
-        "noperspective out vec2 TexCoord;\n"
-        "void main(void){\n"
-        "    TexCoord.x = (gl_VertexID == 2)? 2.0: 0.0;\n"
-        "    TexCoord.y = (gl_VertexID == 1)? 2.0: 0.0;\n"
-        "    gl_Position = vec4(2.0 * TexCoord - 1.0, 0.0, 1.0);\n"
-        "}\n";
 
     GLuint shader_id = glCreateProgram();
 
@@ -188,32 +156,23 @@ int main(int argc, char* argv[]) {
     glBindVertexArray(fullscreen_triangle_vao);
 
     // Prepare game
-    Sprite bacteria_sprite;
-    bacteria_sprite.width = 10;
-    bacteria_sprite.height = 10;
-    bacteria_sprite.data = new uint8_t[100]
-    {
-        0,0,0,0,0,0,0,0,0,0,
-        0,1,1,1,1,1,1,1,1,1,
-        0,1,1,1,1,1,1,1,1,1,
-        0,1,1,1,1,1,1,1,1,1,
-        0,1,1,1,1,1,1,1,1,1,
-        0,1,1,1,1,1,1,1,1,1,
-        0,1,1,1,1,1,1,1,1,1,
-        0,1,1,1,1,1,1,1,1,1,
-        0,1,1,1,1,1,1,1,1,1,
-        0,1,1,1,1,1,1,1,1,1,
-    };
-
     uint32_t clear_color = rgb_to_uint32(255, 255, 255);
 
     while (!glfwWindowShouldClose(window)) {
         buffer_clear(&buffer, clear_color);
 
-        buffer_draw_sprite(&buffer, bacteria_sprite, 112, 128,
-                           rgb_to_uint32(0, 0, 0));
-        buffer_draw_sprite(&buffer, bacteria_sprite, 122, 128,
-                           rgb_to_uint32(0, 0, 0));
+        for (int x = 0; x < 64; ++x)
+            for (int y = 0; y < 28; ++y)
+                if (rand() % 6 == 0)
+                    grid.cells[y*grid.width+x] = 1;
+                else
+                    grid.cells[y*grid.width+x] = 0;
+        grid_printer(&grid, &buffer, &bacteria_sprite);
+        /* buffer_draw_sprite(&buffer, bacteria_sprite, x*10, y*10, */
+        /*                    rgb_to_uint32(0, 0, 0)); */
+        /* buffer_draw_sprite(&buffer, bacteria_sprite, 122, */
+        /*                    (int)(glfwGetTime()*100) % 128, */
+        /*                    rgb_to_uint32(0, 0, 0)); */
 
         glTexSubImage2D(
             GL_TEXTURE_2D, 0, 0, 0,
@@ -231,8 +190,10 @@ int main(int argc, char* argv[]) {
 
     glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 
-    delete[] bacteria_sprite.data;
+    /* delete[] bacteria_sprite.data; */
+    delete[] grid.cells;
     delete[] buffer.data;
 
     return 0;
 }
+
