@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstdint>
 #include <thread>
+#include <mutex>
+#include <cstdlib>
 
 #define GL_ERROR_CASE(glerror)\
     case glerror: snprintf(error, sizeof(error), "%s", #glerror)

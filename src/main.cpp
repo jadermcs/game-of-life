@@ -1,7 +1,5 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <cstdlib>
-#include "utils.h"
 #include "shaders.h"
 #include "grid.h"
 
@@ -22,26 +20,34 @@ void buffer_clear(Buffer* buffer, uint32_t color) {
 }
 
 int main(int argc, char* argv[]) {
-    int n_jobs;
+    int n_jobs; char* filename;
     const size_t buffer_width = 640;
     const size_t buffer_height = 280;
 
-    if (argc > 1) {
+    if (argc > 2) {
         n_jobs = atoi(argv[1]);
+        filename = argv[2];
         printf("Number of threads: %d\n", n_jobs);
+        printf("File name: %s\n", filename);
     }
     else {
-        printf("Please enter number of threads.\n");
+        printf("Please enter number of threads and initial state file.\n");
         return -1;
     }
     Grid grid;
     grid.width = buffer_width/10;
     grid.height = buffer_height/10;
-    grid.cells = new uint8_t[grid.width*grid.height];
+    grid.cells = new uint8_t*[grid.width];
+    for (int i = 0; i < grid.width; ++i) {
+        grid.cells[i] = new uint8_t[grid.height];
+    }
     Grid grid_aux;
     grid_aux.width = buffer_width/10;
     grid_aux.height = buffer_height/10;
-    grid_aux.cells = new uint8_t[grid_aux.width*grid_aux.height];
+    grid_aux.cells = new uint8_t*[grid_aux.width];
+    for (int i = 0; i < grid_aux.width; ++i) {
+        grid_aux.cells[i] = new uint8_t[grid_aux.height];
+    }
 
     Sprite bacteria_sprite;
     bacteria_sprite.width = 10;
@@ -67,7 +73,7 @@ int main(int argc, char* argv[]) {
 
     glfwSetKeyCallback(window, key_callback);
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(5);
+    glfwSwapInterval(10);
 
     GLenum err = glewInit();
     if(err != GLEW_OK) {
@@ -162,7 +168,7 @@ int main(int argc, char* argv[]) {
 
     // Prepare game
     uint32_t clear_color = rgb_to_uint32(255, 255, 255);
-    init_grid(&grid);
+    init_grid(&grid, filename);
 
     while (!glfwWindowShouldClose(window)) {
         buffer_clear(&buffer, clear_color);

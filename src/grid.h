@@ -2,25 +2,27 @@
 #define GRID_H
 #include "utils.h"
 
+std::mutex mtx;
+
 struct Buffer {
     size_t width, height;
     uint32_t* data;
 };
 
 struct Sprite {
-    size_t width, height;
+    int width, height;
     uint8_t* data;
 };
 
 struct Grid {
-    size_t width, height;
-    uint8_t* cells;
+    int width, height;
+    uint8_t** cells;
 };
 
 void buffer_draw_sprite(Buffer* buffer, const Sprite& sprite, size_t x,
         size_t y, uint32_t color) {
-    for(size_t xi = 0; xi < sprite.width; ++xi)
-        for(size_t yi = 0; yi < sprite.height; ++yi)
+    for(int xi = 0; xi < sprite.width; ++xi)
+        for(int yi = 0; yi < sprite.height; ++yi)
             if(sprite.data[yi * sprite.width + xi] &&
                (sprite.height - 1 + y - yi) < buffer->height &&
                (x + xi) < buffer->width)
@@ -30,68 +32,88 @@ void buffer_draw_sprite(Buffer* buffer, const Sprite& sprite, size_t x,
 
 void compute_grid(Grid* grid, Grid* grid_aux, int N, int M) {
     int count;
-    for (int i = 1; i <=grid->height; i++) {
-        for (int j = N; j < M; ++j) {
+    if (N == 0)
+        N = 1;
+    for (int j = 1; j < grid->height; j++) {
+        for (int i = N; i < M; i++) {
             count = 0;
-            if (grid->cells[(i-1)*grid->height+j-1]) count++;
-            if (grid->cells[(i-1)*grid->height+j]) count++;
-            if (grid->cells[(i-1)*grid->height+j+1]) count++;
-            if (grid->cells[i*grid->height+j-1]) count++;
-            if (grid->cells[i*grid->height+j+1]) count++;
-            if (grid->cells[(i+1)*grid->height+j-1]) count++;
-            if (grid->cells[(i+1)*grid->height+j]) count++;
-            if (grid->cells[(i+1)*grid->height+j+1]) count++;
+            if (grid->cells[i-1][j-1]) count++;
+            if (grid->cells[i-1][j]) count++;
+            if (grid->cells[i-1][j+1]) count++;
+            if (grid->cells[i][j-1]) count++;
+            if (grid->cells[i][j+1]) count++;
+            if (grid->cells[i+1][j-1]) count++;
+            if (grid->cells[i+1][j]) count++;
+            if (grid->cells[i+1][j+1]) count++;
 
             if (count <= 1 || count >= 4)
-                grid_aux->cells[i*grid->height+j] = 0;
-            else if (grid->cells[i*grid->height+j] && (count == 2||count == 3))
-                grid_aux->cells[i*grid->height+j] = 1;
-            else if (not grid->cells[i*grid->height+j] && count == 3)
-                grid_aux->cells[i*grid->height+j] = 1;
+                grid_aux->cells[i][j] = 0;
+            else if (grid->cells[i][j] && (count == 2||count == 3))
+                grid_aux->cells[i][j] = 1;
+            else if ((not grid->cells[i][j]) && count == 3)
+                grid_aux->cells[i][j] = 1;
             else
-                grid_aux->cells[i*grid->height+j] = 0;
+                grid_aux->cells[i][j] = 0;
         }
     }
 }
 
 void update_grid(Grid* grid, Grid* grid_aux, int n_jobs) {
     std::thread updaters[n_jobs];
+    int factor = grid->width/n_jobs;
     for (int i = 0; i < n_jobs; ++i) {
-        updaters[i] = std::thread(compute_grid, grid, grid_aux, i, i);
+        if (i == n_jobs-1)
+            updaters[i] = std::thread(compute_grid, grid, grid_aux,
+                                      i*factor, grid->width-1);
+        else
+            updaters[i] = std::thread(compute_grid, grid, grid_aux,
+                                      i*factor, (i+1)*factor);
     }
     for (auto &th : updaters)
         th.join();
-    grid = grid_aux;
+    *grid = *grid_aux;
 }
 
 void grid_printer(Grid* grid, Buffer* buffer, Sprite* sprite) {
-    for (size_t x = 0; x < grid->width; ++x)
-        for (size_t y = 0; y < grid->height; ++y)
-            if (grid->cells[(y*grid->width)+x])
-                buffer_draw_sprite(buffer, *sprite, x*10, y*10,
+    int wspr = sprite->width, hspr = sprite->height;
+    for (int y = 0; y < grid->height; ++y) {
+        for (int x = 0; x < grid->width; ++x) {
+            if (grid->cells[x][y]) {
+                buffer_draw_sprite(buffer, *sprite, x*wspr, y*hspr,
                                    rgb_to_uint32(0, 0, 0));
+            }
+        }
+    }
 }
 
-void init_grid(Grid* grid) {
-    for (int x = 0; x < (int)grid->width; ++x)
-        for (int y = 0; y < (int)grid->height; ++y)
-            if (rand() % 6 == 0)
-                grid->cells[y*grid->width+x] = 1;
-            else
-                grid->cells[y*grid->width+x] = 0;
+void init_grid(Grid* grid, char* filename) {
+    FILE* fp = fopen(filename, "r");
+    char ch;
+    if (fp == NULL) {
+        perror("Can't open file.\n");
+        exit(EXIT_FAILURE);
+    }
+    for (int y = 0; y < grid->height; ++y) {
+        for (int x = 0; x < grid->width; ++x) {
+            ch = fgetc(fp);
+            if (ch == '\n')
+                ch = fgetc(fp);
+            grid->cells[x][y] = (ch - '0');
+        }
+    }
 }
 
 uint8_t bac_sprite[100] =
 {
-    1,1,1,1,1,0,0,0,0,0,
-    1,1,1,1,1,0,1,0,0,0,
-    1,1,1,1,1,0,1,1,0,0,
-    1,1,1,1,1,0,1,1,1,0,
-    1,1,1,1,1,0,1,1,1,0,
-    0,0,0,0,0,0,1,1,1,0,
-    0,1,1,1,1,1,0,1,1,0,
-    0,0,1,1,1,1,1,0,1,0,
-    0,0,0,1,1,1,1,1,0,0,
     0,0,0,0,0,0,0,0,0,0,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
 };
 #endif /* GRID_H */
