@@ -38,6 +38,10 @@ int main(int argc, char* argv[]) {
     grid.width = buffer_width/10;
     grid.height = buffer_height/10;
     grid.cells = new uint8_t[grid.width*grid.height];
+    Grid grid_aux;
+    grid_aux.width = buffer_width/10;
+    grid_aux.height = buffer_height/10;
+    grid_aux.cells = new uint8_t[grid_aux.width*grid_aux.height];
 
     Sprite bacteria_sprite;
     bacteria_sprite.width = 10;
@@ -93,7 +97,8 @@ int main(int argc, char* argv[]) {
     GLuint buffer_texture;
     glGenTextures(1, &buffer_texture);
     glBindTexture(GL_TEXTURE_2D, buffer_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, buffer.width, buffer.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, buffer.data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, buffer.width, buffer.height, 0,
+                 GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, buffer.data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -157,22 +162,13 @@ int main(int argc, char* argv[]) {
 
     // Prepare game
     uint32_t clear_color = rgb_to_uint32(255, 255, 255);
+    init_grid(&grid);
 
     while (!glfwWindowShouldClose(window)) {
         buffer_clear(&buffer, clear_color);
 
-        for (int x = 0; x < 64; ++x)
-            for (int y = 0; y < 28; ++y)
-                if (rand() % 6 == 0)
-                    grid.cells[y*grid.width+x] = 1;
-                else
-                    grid.cells[y*grid.width+x] = 0;
+        update_grid(&grid, &grid_aux, n_jobs);
         grid_printer(&grid, &buffer, &bacteria_sprite);
-        /* buffer_draw_sprite(&buffer, bacteria_sprite, x*10, y*10, */
-        /*                    rgb_to_uint32(0, 0, 0)); */
-        /* buffer_draw_sprite(&buffer, bacteria_sprite, 122, */
-        /*                    (int)(glfwGetTime()*100) % 128, */
-        /*                    rgb_to_uint32(0, 0, 0)); */
 
         glTexSubImage2D(
             GL_TEXTURE_2D, 0, 0, 0,
@@ -190,7 +186,6 @@ int main(int argc, char* argv[]) {
 
     glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 
-    /* delete[] bacteria_sprite.data; */
     delete[] grid.cells;
     delete[] buffer.data;
 

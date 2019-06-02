@@ -2,6 +2,7 @@
 #define UTILS_H
 #include <cstdio>
 #include <cstdint>
+#include <thread>
 
 #define GL_ERROR_CASE(glerror)\
     case glerror: snprintf(error, sizeof(error), "%s", #glerror)
