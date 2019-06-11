@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
 
     glfwSetKeyCallback(window, key_callback);
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(10);
+    glfwSwapInterval(5);
 
     GLenum err = glewInit();
     if(err != GLEW_OK) {

@@ -23,67 +23,68 @@ void buffer_draw_sprite(Buffer* buffer, const Sprite& sprite, size_t x,
         size_t y, uint32_t color) {
     for(int xi = 0; xi < sprite.width; ++xi)
         for(int yi = 0; yi < sprite.height; ++yi)
-            if(sprite.data[yi * sprite.width + xi] &&
-               (sprite.height - 1 + y - yi) < buffer->height &&
+            if(sprite.data[yi * sprite.width + xi] and
+               (sprite.height - 1 + y - yi) < buffer->height and
                (x + xi) < buffer->width)
                 buffer->data[(sprite.height - 1 + y - yi) *
                     buffer->width + (x + xi)] = color;
 }
 
-void compute_grid(Grid* grid, Grid* grid_aux, int N, int M) {
-    int count;
-    if (N == 0)
-        N = 1;
-    for (int j = 1; j < grid->height; j++) {
-        for (int i = N; i < M; i++) {
-            count = 0;
-            if (grid->cells[i-1][j-1]) count++;
-            if (grid->cells[i-1][j]) count++;
-            if (grid->cells[i-1][j+1]) count++;
-            if (grid->cells[i][j-1]) count++;
-            if (grid->cells[i][j+1]) count++;
-            if (grid->cells[i+1][j-1]) count++;
-            if (grid->cells[i+1][j]) count++;
-            if (grid->cells[i+1][j+1]) count++;
+int neighbor(uint8_t** grid, int i, int j) {
+    int count = 0;
+    for (int ix = -1; ix < 2; ix++)
+        for (int jx = -1; jx < 2; jx++)
+            if ((ix or jx) and grid[i+ix][j+jx])
+                count++;
+    return count;
+}
 
-            if (count <= 1 || count >= 4)
-                grid_aux->cells[i][j] = 0;
-            else if (grid->cells[i][j] && (count == 2||count == 3))
-                grid_aux->cells[i][j] = 1;
-            else if ((not grid->cells[i][j]) && count == 3)
-                grid_aux->cells[i][j] = 1;
-            else
-                grid_aux->cells[i][j] = 0;
+void compute_grid(Grid* grid, Grid* grid_aux, int N, int M) {
+    int alive, i, j;
+    if (N == 0) N = 1;
+
+    for (j = 1; j < grid->height; j++)
+        for (i = N; i < M; i++) {
+            alive = neighbor(grid->cells, i, j);
+
+            if (alive == 2) grid_aux->cells[i][j] = grid->cells[i][j];
+            if (alive == 3) grid_aux->cells[i][j] = 1;
+            if (alive < 2)  grid_aux->cells[i][j] = 0;
+            if (alive > 3)  grid_aux->cells[i][j] = 0;
         }
-    }
 }
 
 void update_grid(Grid* grid, Grid* grid_aux, int n_jobs) {
     std::thread updaters[n_jobs];
-    int factor = grid->width/n_jobs;
-    for (int i = 0; i < n_jobs; ++i) {
+    int i, j, bound = (grid->width) / n_jobs;
+    for (i = 0; i < n_jobs; ++i) {
         if (i == n_jobs-1)
             updaters[i] = std::thread(compute_grid, grid, grid_aux,
-                                      i*factor, grid->width-1);
+                                      i * bound, (grid->width) - 1);
         else
             updaters[i] = std::thread(compute_grid, grid, grid_aux,
-                                      i*factor, (i+1)*factor);
+                                      i * bound, (i+1) * bound);
     }
+
     for (auto &th : updaters)
         th.join();
-    *grid = *grid_aux;
+
+    uint8_t** temp;
+    temp = grid->cells;
+    grid->cells = grid_aux->cells;
+    grid_aux->cells = temp;
+    /* for (i = 0; i < grid->width; ++i) */
+    /*     for (j = 0; j < grid->height; ++j) */
+    /*         grid->cells[i][j] = grid_aux->cells[i][j]; */
 }
 
 void grid_printer(Grid* grid, Buffer* buffer, Sprite* sprite) {
     int wspr = sprite->width, hspr = sprite->height;
-    for (int y = 0; y < grid->height; ++y) {
-        for (int x = 0; x < grid->width; ++x) {
-            if (grid->cells[x][y]) {
+    for (int y = 0; y < grid->height; ++y)
+        for (int x = 0; x < grid->width; ++x)
+            if (grid->cells[x][y])
                 buffer_draw_sprite(buffer, *sprite, x*wspr, y*hspr,
                                    rgb_to_uint32(0, 0, 0));
-            }
-        }
-    }
 }
 
 void init_grid(Grid* grid, char* filename) {
@@ -101,6 +102,7 @@ void init_grid(Grid* grid, char* filename) {
             grid->cells[x][y] = (ch - '0');
         }
     }
+    fclose(fp);
 }
 
 uint8_t bac_sprite[100] =
