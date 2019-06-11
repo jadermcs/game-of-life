@@ -56,7 +56,8 @@ void compute_grid(Grid* grid, Grid* grid_aux, int N, int M) {
 
 void update_grid(Grid* grid, Grid* grid_aux, int n_jobs) {
     std::thread updaters[n_jobs];
-    int i, j, bound = (grid->width) / n_jobs;
+    uint8_t** temp;
+    int i, bound = (grid->width) / n_jobs;
     for (i = 0; i < n_jobs; ++i) {
         if (i == n_jobs-1)
             updaters[i] = std::thread(compute_grid, grid, grid_aux,
@@ -69,13 +70,9 @@ void update_grid(Grid* grid, Grid* grid_aux, int n_jobs) {
     for (auto &th : updaters)
         th.join();
 
-    uint8_t** temp;
     temp = grid->cells;
     grid->cells = grid_aux->cells;
     grid_aux->cells = temp;
-    /* for (i = 0; i < grid->width; ++i) */
-    /*     for (j = 0; j < grid->height; ++j) */
-    /*         grid->cells[i][j] = grid_aux->cells[i][j]; */
 }
 
 void grid_printer(Grid* grid, Buffer* buffer, Sprite* sprite) {
