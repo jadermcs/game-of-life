@@ -2,8 +2,6 @@
 #define GRID_H
 #include "utils.h"
 
-std::mutex mtx;
-
 struct Buffer {
     size_t width, height;
     uint32_t* data;

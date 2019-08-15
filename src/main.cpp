@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include "shaders.h"
 #include "grid.h"
+#include <stdlib.h>
 
 
 static void error_callback(int error, const char* description) {
@@ -12,8 +13,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action,
                          int mods){
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
-    if (scancode && mods)
-        printf("keycall: %d", mods);
 }
 
 void buffer_clear(Buffer* buffer, uint32_t color) {
@@ -39,16 +38,16 @@ int main(int argc, char* argv[]) {
     Grid grid;
     grid.width = buffer_width/10;
     grid.height = buffer_height/10;
-    grid.cells = new uint8_t*[grid.width];
+    grid.cells = (uint8_t**) malloc(grid.width * sizeof(uint8_t*));
     for (int i = 0; i < grid.width; ++i) {
-        grid.cells[i] = new uint8_t[grid.height];
+        grid.cells[i] = (uint8_t *) malloc(grid.height * sizeof(uint8_t));
     }
     Grid grid_aux;
     grid_aux.width = buffer_width/10;
     grid_aux.height = buffer_height/10;
-    grid_aux.cells = new uint8_t*[grid_aux.width];
+    grid_aux.cells = (uint8_t**) malloc(grid.width * sizeof(uint8_t*));
     for (int i = 0; i < grid_aux.width; ++i) {
-        grid_aux.cells[i] = new uint8_t[grid_aux.height];
+        grid_aux.cells[i] = (uint8_t *) malloc(grid.height * sizeof(uint8_t));
     }
 
     Sprite bacteria_sprite;
@@ -97,7 +96,7 @@ int main(int argc, char* argv[]) {
     Buffer buffer;
     buffer.width  = buffer_width;
     buffer.height = buffer_height;
-    buffer.data   = new uint32_t[buffer.width * buffer.height];
+    buffer.data   = (uint32_t *) malloc(buffer.width * buffer.height *sizeof(uint32_t));
 
     buffer_clear(&buffer, 0);
 
@@ -152,7 +151,7 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Error while validating shader.\n");
         glfwTerminate();
         glDeleteVertexArrays(1, &fullscreen_triangle_vao);
-        delete[] buffer.data;
+        free(buffer.data);
         return -1;
     }
 
@@ -194,8 +193,15 @@ int main(int argc, char* argv[]) {
 
     glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 
-    delete[] grid.cells;
-    delete[] buffer.data;
+    for(int i = 0; i < grid.width; i++)
+        free(grid.cells[i]);
+    free(grid.cells);
+
+    for(int i = 0; i < grid_aux.width; i++)
+        free(grid_aux.cells[i]);
+    free(grid_aux.cells);
+
+    free(buffer.data);
 
     return 0;
 }

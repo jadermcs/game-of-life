@@ -5,6 +5,11 @@ Conway's game of life using GLFW.
 
 - glew
 - glfw
+- opengl
+
+```
+sudo apt install libglfw3-dev libglew-dev libgl1-mesa-dev
+```
 
 ## Building
 

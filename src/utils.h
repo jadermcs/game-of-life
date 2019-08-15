@@ -1,10 +1,10 @@
 #ifndef UTILS_H
 #define UTILS_H
-#include <cstdio>
-#include <cstdint>
 #include <thread>
-#include <mutex>
-#include <cstdlib>
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #define GL_ERROR_CASE(glerror)\
     case glerror: snprintf(error, sizeof(error), "%s", #glerror)
