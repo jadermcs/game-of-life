@@ -3,7 +3,7 @@ project(GameOfLife)
 
 set(CMAKE_CXX_STANDARD 11)
 set(OpenGL_GL_PREFERENCE LEGACY)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g -Wall -pthread")
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -Wall -pthread")
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(GLEW REQUIRED)

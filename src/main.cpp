@@ -15,15 +15,15 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action,
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-void buffer_clear(Buffer* buffer, uint32_t color) {
-    for(size_t i = 0; i < buffer->width * buffer->height; ++i)
-        buffer->data[i] = color;
+void buffer_clear(uint32_t color) {
+    for(size_t i = 0; i < buffer.w * buffer.h; ++i)
+        buffer.data[i] = color;
 }
 
 int main(int argc, char* argv[]) {
     int n_jobs; char* filename;
-    const size_t buffer_width = 640;
-    const size_t buffer_height = 280;
+    const size_t buffer_w = 640;
+    const size_t buffer_h = 280;
 
     if (argc > 2) {
         n_jobs = atoi(argv[1]);
@@ -35,25 +35,24 @@ int main(int argc, char* argv[]) {
         printf("Please enter number of threads and initial state file.\n");
         return -1;
     }
-    Grid grid;
-    grid.width = buffer_width/10;
-    grid.height = buffer_height/10;
-    grid.cells = (uint8_t**) malloc(grid.width * sizeof(uint8_t*));
-    for (int i = 0; i < grid.width; ++i) {
-        grid.cells[i] = (uint8_t *) malloc(grid.height * sizeof(uint8_t));
-    }
-    Grid grid_aux;
-    grid_aux.width = buffer_width/10;
-    grid_aux.height = buffer_height/10;
-    grid_aux.cells = (uint8_t**) malloc(grid.width * sizeof(uint8_t*));
-    for (int i = 0; i < grid_aux.width; ++i) {
-        grid_aux.cells[i] = (uint8_t *) malloc(grid.height * sizeof(uint8_t));
+
+    grid.w = buffer_w/10;
+    grid.h = buffer_h/10;
+    grid.cells = (uint8_t**) malloc(grid.w * sizeof(uint8_t*));
+    for (int i = 0; i < grid.w; ++i) {
+        grid.cells[i] = (uint8_t *) malloc(grid.h * sizeof(uint8_t));
     }
 
-    Sprite bacteria_sprite;
-    bacteria_sprite.width = 10;
-    bacteria_sprite.height = 10;
-    bacteria_sprite.data = bac_sprite;
+    grid_aux.w = buffer_w/10;
+    grid_aux.h = buffer_h/10;
+    grid_aux.cells = (uint8_t**) malloc(grid.w * sizeof(uint8_t*));
+    for (int i = 0; i < grid_aux.w; ++i) {
+        grid_aux.cells[i] = (uint8_t *) malloc(grid.h * sizeof(uint8_t));
+    }
+
+    sprite.w = 10;
+    sprite.h = 10;
+    sprite.data = bac_sprite;
 
     glfwSetErrorCallback(error_callback);
 
@@ -65,7 +64,7 @@ int main(int argc, char* argv[]) {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     /* Create a windowed mode window and its OpenGL context */
-    GLFWwindow* window = glfwCreateWindow(buffer_width, buffer_height,
+    GLFWwindow* window = glfwCreateWindow(buffer_w, buffer_h,
                                           "Game of Life", NULL, NULL);
     if(!window) {
         glfwTerminate();
@@ -93,18 +92,17 @@ int main(int argc, char* argv[]) {
     printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     // Create graphics buffer
-    Buffer buffer;
-    buffer.width  = buffer_width;
-    buffer.height = buffer_height;
-    buffer.data   = (uint32_t *) malloc(buffer.width * buffer.height *sizeof(uint32_t));
+    buffer.w  = buffer_w;
+    buffer.h = buffer_h;
+    buffer.data   = (uint32_t *) malloc(buffer.w * buffer.h *sizeof(uint32_t));
 
-    buffer_clear(&buffer, 0);
+    buffer_clear(0);
 
     // Create texture for presenting buffer to OpenGL
     GLuint buffer_texture;
     glGenTextures(1, &buffer_texture);
     glBindTexture(GL_TEXTURE_2D, buffer_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, buffer.width, buffer.height, 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, buffer.w, buffer.h, 0,
                  GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, buffer.data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -169,17 +167,17 @@ int main(int argc, char* argv[]) {
 
     // Prepare game
     uint32_t clear_color = rgb_to_uint32(255, 255, 255);
-    init_grid(&grid, filename);
+    init_grid(filename);
 
     while (!glfwWindowShouldClose(window)) {
-        buffer_clear(&buffer, clear_color);
+        buffer_clear(clear_color);
 
-        update_grid(&grid, &grid_aux, n_jobs);
-        grid_printer(&grid, &buffer, &bacteria_sprite);
+        update_grid(n_jobs);
+        grid_printer();
 
         glTexSubImage2D(
             GL_TEXTURE_2D, 0, 0, 0,
-            buffer.width, buffer.height,
+            buffer.w, buffer.h,
             GL_RGBA, GL_UNSIGNED_INT_8_8_8_8,
             buffer.data
         );
@@ -193,11 +191,11 @@ int main(int argc, char* argv[]) {
 
     glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 
-    for(int i = 0; i < grid.width; i++)
+    for(int i = 0; i < grid.w; i++)
         free(grid.cells[i]);
     free(grid.cells);
 
-    for(int i = 0; i < grid_aux.width; i++)
+    for(int i = 0; i < grid_aux.w; i++)
         free(grid_aux.cells[i]);
     free(grid_aux.cells);
 
