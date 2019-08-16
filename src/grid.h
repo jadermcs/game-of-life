@@ -18,9 +18,9 @@ struct Grid {
     uint8_t **cells;
 } grid, grid_aux;
 
-struct Args {
+typedef struct {
     int arg1, arg2;
-};
+} Args;
 
 void buffer_draw_sprite(size_t x, size_t y, uint32_t color) {
     for(int xi = 0; xi < sprite.w; ++xi)
@@ -42,7 +42,7 @@ int neighbor(uint8_t** grid_local, int i, int j) {
 }
 
 void *compute_grid(void *arguments) {
-    struct Args args = *((struct Args *) arguments);
+    Args args = *((Args *) arguments);
     int N = args.arg1 == 0 ? 1 : args.arg1,
         M = args.arg2,
         alive;
@@ -61,11 +61,11 @@ void *compute_grid(void *arguments) {
 
 void update_grid(int n_jobs) {
     pthread_t updaters[n_jobs];
-    struct Args *args;
+    Args *args;
     uint8_t **temp;
     int bound = (grid.w) / n_jobs;
     for (int i = 0; i < n_jobs; ++i) {
-        args = (struct Args *) malloc(sizeof(struct Args));
+        args = (Args *) malloc(sizeof(Args));
         args->arg1 = i * bound;
 
         if (i == n_jobs-1) args->arg2 = grid.w - 1;
