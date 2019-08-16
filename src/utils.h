@@ -1,6 +1,5 @@
 #ifndef UTILS_H
 #define UTILS_H
-#include <thread>
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdint.h>
