@@ -18,9 +18,10 @@ struct Grid {
     uint8_t **cells;
 } grid, grid_aux;
 
-typedef struct {
-    int arg1, arg2;
-} Args;
+void buffer_clear(uint32_t color) {
+    for(size_t i = 0; i < buffer.w * buffer.h; ++i)
+        buffer.data[i] = color;
+}
 
 void buffer_draw_sprite(size_t x, size_t y, uint32_t color) {
     for(int xi = 0; xi < sprite.w; ++xi)

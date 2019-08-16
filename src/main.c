@@ -5,21 +5,6 @@
 #include <stdlib.h>
 
 
-static void error_callback(int error, const char* description) {
-    fprintf(stderr, "Error: %s code %d\n", description, error);
-}
-
-static void key_callback(GLFWwindow* window, int key, int scancode, int action,
-                         int mods){
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-}
-
-void buffer_clear(uint32_t color) {
-    for(size_t i = 0; i < buffer.w * buffer.h; ++i)
-        buffer.data[i] = color;
-}
-
 int main(int argc, char* argv[]) {
     int n_jobs; char* filename;
     const size_t buffer_w = 640;
