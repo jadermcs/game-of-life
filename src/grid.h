@@ -25,8 +25,8 @@ struct Args {
 void buffer_draw_sprite(size_t x, size_t y, uint32_t color) {
     for(int xi = 0; xi < sprite.w; ++xi)
         for(int yi = 0; yi < sprite.h; ++yi)
-            if(sprite.data[yi * sprite.w+ xi] and
-               (sprite.h - 1 + y - yi) < buffer.h and
+            if(sprite.data[yi * sprite.w+ xi] &&
+               (sprite.h - 1 + y - yi) < buffer.h &&
                (x + xi) < buffer.w)
                 buffer.data[(sprite.h - 1 + y - yi) *
                     buffer.w + (x + xi)] = color;
@@ -36,7 +36,7 @@ int neighbor(uint8_t** grid_local, int i, int j) {
     int count = 0;
     for (int ix = -1; ix < 2; ix++)
         for (int jx = -1; jx < 2; jx++)
-            if ((ix or jx) and grid_local[i+ix][j+jx])
+            if ((ix || jx) && grid_local[i+ix][j+jx])
                 count++;
     return count;
 }
