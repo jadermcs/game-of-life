@@ -1,9 +1,37 @@
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include "shaders.h"
 #include "grid.h"
-#include <stdlib.h>
 
+static const char* fragment_shader =
+    "#version 330\n"
+    "uniform sampler2D buffer;\n"
+    "noperspective in vec2 TexCoord;\n"
+    "out vec3 outColor;\n"
+    "void main(void){\n"
+    "    outColor = texture(buffer, TexCoord).rgb;\n"
+    "}\n";
+
+static const char* vertex_shader =
+    "#version 330\n"
+    "noperspective out vec2 TexCoord;\n"
+    "void main(void){\n"
+    "    TexCoord.x = (gl_VertexID == 2)? 2.0: 0.0;\n"
+    "    TexCoord.y = (gl_VertexID == 1)? 2.0: 0.0;\n"
+    "    gl_Position = vec4(2.0 * TexCoord - 1.0, 0.0, 1.0);\n"
+    "}\n";
+
+static uint8_t bac_sprite[100] =
+{
+    0,0,0,0,0,0,0,0,0,0,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,
+};
 
 int main(int argc, char* argv[]) {
     int n_jobs; char* filename;
@@ -186,4 +214,3 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
-

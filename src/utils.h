@@ -1,25 +1,18 @@
 #ifndef UTILS_H
 #define UTILS_H
-#include <pthread.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <stdio.h>
+#include <stdint.h>
 
 typedef struct {
     int arg1, arg2;
 } Args;
 
-static void error_callback(int error, const char* description) {
-    fprintf(stderr, "Error: %s code %d\n", description, error);
-}
+extern void error_callback(int, const char*);
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action,
-                         int mods){
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-}
+extern void key_callback(GLFWwindow*, int, int, int, int);
 
-static uint32_t rgb_to_uint32(uint8_t r, uint8_t g, uint8_t b) {
-    return (r << 24) | (g << 16) | (b << 8) | 255;
-}
+extern uint32_t rgb_to_uint32(uint8_t, uint8_t, uint8_t);
 #endif /* UTILS_H */
