@@ -1,6 +1,8 @@
 # Game of Life
 Conway's game of life using GLFW.
 
+![conway](example.gif "Conway's Game of Life")
+
 ## Dependencies
 
 - glew
