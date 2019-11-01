@@ -1,10 +1,12 @@
 #include "grid.h"
 
 int main(int argc, char* argv[]) {
-    int n_jobs, buffer_w, buffer_h; char* filename;
+    int n_jobs, buffer_w, buffer_h;
+    const char* filename = NULL;
 
     if (argc > 2)
     {
+        n_jobs = 4;
         filename = argv[1];
         buffer_w = atoi(argv[2]);
         buffer_h = atoi(argv[3]);
@@ -19,28 +21,10 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    grid_aux.w = grid.w = buffer_w;
-    grid_aux.h = grid.h = buffer_h;
-    grid.cells = (uint8_t**) malloc(grid.w * sizeof(uint8_t*));
-    grid_aux.cells = (uint8_t**) malloc(grid.w * sizeof(uint8_t*));
-    for (int i = 0; i < grid.w; ++i) {
-        grid.cells[i] = (uint8_t *) malloc(grid.h * sizeof(uint8_t));
-        grid_aux.cells[i] = (uint8_t *) malloc(grid.h * sizeof(uint8_t));
-    }
-
-    init_grid(filename);
-
-    while (1) {
-        update_grid(n_jobs);
-        grid_printer();
-    }
-
-    for(int i = 0; i < grid.w; i++) {
-        free(grid.cells[i]);
-        free(grid_aux.cells[i]);
-    }
-    free(grid.cells);
-    free(grid_aux.cells);
+    getchar();
+    init_grid(filename, buffer_w, buffer_h);
+    simulate(n_jobs);
+    destroy_grid();
 
     return 0;
 }

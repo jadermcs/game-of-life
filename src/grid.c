@@ -1,39 +1,52 @@
 #include "grid.h"
-#include <pthread.h>
 
-void buffer_clear(uint32_t color) {
-    for(size_t i = 0; i < buffer.w * buffer.h; ++i)
-        buffer.data[i] = color;
+static volatile int keep_running = 1;
+
+void intHandler(int dummy) {
+    keep_running = 0;
 }
 
-void buffer_draw_sprite(size_t x, size_t y, uint32_t color) {
-    for(int xi = 0; xi < sprite.w; ++xi)
-        for(int yi = 0; yi < sprite.h; ++yi)
-            if(sprite.data[yi * sprite.w+ xi] &&
-               (sprite.h - 1 + y - yi) < buffer.h &&
-               (x + xi) < buffer.w)
-                buffer.data[(sprite.h - 1 + y - yi) *
-                    buffer.w + (x + xi)] = color;
+void simulate(int n_jobs)
+{
+    //disable cursor block
+    signal(SIGINT, intHandler);
+    printf("\e[?25l");
+    while (keep_running) {
+        update_grid(n_jobs);
+        grid_printer();
+        usleep(100*1000);
+    }
+    //enable cursor block
+    printf("\e[?25h");
 }
 
-int neighbor(uint8_t** grid_local, int i, int j) {
+void destroy_grid()
+{
+    for(int i = 0; i < grid.w; i++) {
+        free(grid.cells[i]);
+        free(grid_aux.cells[i]);
+    }
+    free(grid.cells);
+    free(grid_aux.cells);
+}
+
+int neighbor(int i, int j) {
     int count = 0;
-    for (int ix = -1; ix < 2; ix++)
-        for (int jx = -1; jx < 2; jx++)
-            if ((ix || jx) && grid_local[i+ix][j+jx])
+    for (int ix = -1; ix <= 1; ix++)
+        for (int jx = -1; jx <= 1; jx++)
+            if ((ix || jx) && grid.cells[i+ix][j+jx])
                 count++;
     return count;
 }
 
 void *compute_grid(void *arguments) {
     Args args = *((Args *) arguments);
-    int N = args.arg1 == 0 ? 1 : args.arg1,
-        M = args.arg2,
+    int N = args.arg1 == 0 ? 1 : args.arg1, M = args.arg2,
         alive;
 
     for (int j = 1; j < grid.h; j++)
         for (int i = N; i < M; i++) {
-            alive = neighbor(grid.cells, i, j);
+            alive = neighbor(i, j);
 
             if (alive == 2) grid_aux.cells[i][j] = grid.cells[i][j];
             if (alive == 3) grid_aux.cells[i][j] = 1;
@@ -46,7 +59,7 @@ void *compute_grid(void *arguments) {
 void update_grid(int n_jobs) {
     pthread_t updaters[n_jobs];
     Args *args;
-    uint8_t **temp;
+    int **temp;
     int bound = (grid.w) / n_jobs;
     for (int i = 0; i < n_jobs; ++i) {
         args = (Args *) malloc(sizeof(Args));
@@ -67,15 +80,27 @@ void update_grid(int n_jobs) {
 }
 
 void grid_printer() {
+    system("@cls||clear");
     for (int y = 0; y < grid.h; ++y)
+    {
         for (int x = 0; x < grid.w; ++x)
-            if (grid.cells[x][y])
-                buffer_draw_sprite(x*sprite.w, y*sprite.h, rgb_to_uint32(0, 0, 0));
+            if (grid.cells[x][y]) printf("\u2588");
+            else printf(" ");
+        printf("\n");
+    }
 }
 
-void init_grid(char *filename) {
+void init_grid(const char *filename, int buffer_w, int buffer_h) {
     FILE *fp = fopen(filename, "r");
     char ch;
+    grid_aux.w = grid.w = buffer_w;
+    grid_aux.h = grid.h = buffer_h;
+    grid.cells = (int **) malloc(grid.w * sizeof(int *));
+    grid_aux.cells = (int **) malloc(grid.w * sizeof(int *));
+    for (int i = 0; i < grid.w; ++i) {
+        grid.cells[i] = (int *) malloc(grid.h * sizeof(int));
+        grid_aux.cells[i] = (int *) malloc(grid.h * sizeof(int));
+    }
     if (fp == NULL) {
         perror("Can't open file.\n");
         exit(EXIT_FAILURE);
